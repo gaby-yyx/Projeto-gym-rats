@@ -1,192 +1,228 @@
-/* Variáveis de Cores (Consistência com a Página Inicial) */
+/* Estilos para monitoramento.css */
 :root {
     --color-black: #0A0A0A;
     --color-white: #FFFFFF;
     --color-yellow: #FFD700;
     --color-light-gray: #F0F0F0;
     --color-dark-gray: #333333;
-}
-
-/* Reset Básico */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+    --color-red-error: #E74C3C;
+    --color-green-success: #2ECC71;
 }
 
 body {
-    font-family: 'Roboto', sans-serif;
-    line-height: 1.6;
     background-color: var(--color-black);
     color: var(--color-white);
-    overflow-x: hidden;
-}
-
-.container {
-    width: 90%;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px 0;
-}
-
-/* Header */
-.monitoramento-header {
-    background-color: var(--color-black);
-    color: var(--color-white);
-    padding: 15px 0;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
-    text-align: center;
     display: flex;
-    justify-content: center;
-    align-items: center;
-    position: relative;
+    flex-direction: column;
+    height: 100vh; /* Full viewport height */
+    margin: 0;
+    overflow: hidden; /* Prevent scrollbars on the body itself */
+}
+
+.main-header {
+    background-color: var(--color-black);
+    padding: 10px 0;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+    width: 100%;
+    z-index: 10;
 }
 
 .header-content {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
-.back-button {
-    color: var(--color-white);
-    text-decoration: none;
-    position: absolute;
-    left: 20px;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    transition: color 0.3s ease;
-}
-
-.back-button:hover {
+.back-link {
     color: var(--color-yellow);
+    font-size: 1.5em;
+    text-decoration: none;
 }
 
-.monitoramento-header h1 {
+.logo-monitor {
     font-family: 'Montserrat', sans-serif;
     font-size: 1.5em;
     font-weight: 700;
     color: var(--color-yellow);
-    margin: 0;
-}
-
-/* Main Section */
-.monitoramento-section {
-    padding: 40px 20px;
-    background-color: var(--color-dark-gray);
-    color: var(--color-white);
-}
-
-.instrucoes {
-    margin-bottom: 30px;
     text-align: center;
 }
 
-.instrucoes h2 {
-    font-family: 'Montserrat', sans-serif;
-    font-size: 1.8em;
-    margin-bottom: 20px;
+.placeholder-div {
+    width: 1.5em; /* Mesma largura do ícone de voltar para balancear */
 }
 
-.instrucoes p {
-    font-size: 1.1em;
-    margin-bottom: 15px;
-}
-
-#iniciarCamera,
-#repetirInstrucao {
-    background-color: var(--color-yellow);
-    color: var(--color-black);
-    border: none;
-    padding: 10px 20px;
-    border-radius: 5px;
-    font-size: 1em;
-    cursor: pointer;
-    transition: background-color 0.3s ease, color 0.3s ease;
-    margin-top: 10px;
-}
-
-#iniciarCamera:hover,
-#repetirInstrucao:hover {
-    background-color: var(--color-white);
-    color: var(--color-black);
-}
-
-#cameraSelect {
-    background-color: var(--color-black);
-    color: var(--color-white);
-    border: 1px solid var(--color-yellow);
-    padding: 8px;
-    border-radius: 5px;
-    font-size: 1em;
-    margin-left: 10px;
-}
-
-.video-container {
-    position: relative;
-    max-width: 600px;
-    margin: 20px auto;
-}
-
-#cameraView {
+.monitor-container {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
     width: 100%;
-    aspect-ratio: 4 / 3; /* Manter proporção */
-    background-color: var(--color-black);
+    overflow: hidden; /* Prevent internal scrolling from affecting body */
 }
 
-#overlay {
+.camera-area {
+    position: relative;
+    width: 100%;
+    /* Ajuste a aspect-ratio conforme o comum em celulares ou deixe a JS ajustar */
+    aspect-ratio: 9 / 16; /* Proporção vertical comum */
+    background-color: #1a1a1a;
+    overflow: hidden;
+}
+
+#cameraFeed, #overlayCanvas {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
-    aspect-ratio: 4 / 3; /* Manter proporção */
-    pointer-events: none; /* Permitir interação com o vídeo */
+    height: 100%;
+    object-fit: cover; /* Garante que o vídeo cubra a área, pode cortar um pouco */
 }
 
-.feedback {
+#overlayCanvas {
+    z-index: 5; /* Para desenhar sobre o vídeo */
+}
+
+.loading-indicator {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--color-yellow);
     text-align: center;
-    margin-top: 30px;
-}
-
-.feedback-text {
-    background-color: var(--color-black);
-    padding: 15px;
-    border-radius: 5px;
-    margin-bottom: 20px;
-}
-
-#feedbackText {
+    z-index: 6;
     font-size: 1.2em;
-    font-weight: bold;
 }
 
-.feedback-audio {
-    /* Estilos para os botões de áudio, se necessário */
+.loading-indicator i {
+    font-size: 2em;
+    margin-bottom: 10px;
 }
 
-/* Footer */
-.monitoramento-footer {
-    background-color: var(--color-black);
-    color: var(--color-white);
+
+.controls-feedback-area {
+    background-color: var(--color-dark-gray);
+    padding: 15px;
     text-align: center;
-    padding: 20px 0;
-    font-size: 0.9em;
+    flex-shrink: 0; /* Não encolhe */
+    border-top: 2px solid var(--color-yellow);
+    overflow-y: auto; /* Permite scroll se o conteúdo for muito */
+    max-height: calc(100vh - (9 / 16 * 100vw) - 60px); /* Altura restante aproximada */
 }
 
-/* Media Queries (Responsividade) */
-@media (min-width: 768px) {
-    .monitoramento-header h1 {
-        font-size: 2em;
-    }
+.exercise-title h2 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1.4em;
+    color: var(--color-yellow);
+    margin-top: 0;
+    margin-bottom: 15px;
+}
 
-    .instrucoes {
-        text-align: left;
-    }
+.controls {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    margin-bottom: 15px;
+}
 
-    .video-container {
-        max-width: 800px;
+.controls button {
+    background-color: var(--color-yellow);
+    color: var(--color-black);
+    border: none;
+    padding: 12px 18px;
+    border-radius: 8px;
+    font-size: 1em;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.controls button:hover {
+    background-color: var(--color-white);
+}
+
+.controls button:active {
+    transform: scale(0.95);
+}
+
+.controls button i {
+    font-size: 1.2em;
+}
+
+.feedback-area {
+    margin-top: 10px;
+}
+
+#textFeedback {
+    font-size: 1.1em;
+    color: var(--color-light-gray);
+    min-height: 2em; /* Para evitar saltos de layout */
+    margin-bottom: 10px;
+}
+
+.feedback-area .visual-cues {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: rgba(0,0,0,0.2);
+    border-radius: 5px;
+}
+.cue-description {
+    font-size: 0.9em;
+    color: var(--color-light-gray);
+    margin-bottom: 8px;
+}
+.cue-lines-example {
+    position: relative;
+    width: 100px; /* Tamanho de exemplo */
+    height: 80px; /* Tamanho de exemplo */
+    border: 1px dashed var(--color-dark-gray);
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.cue-lines-example .line {
+    position: absolute;
+    background-color: var(--color-yellow);
+}
+.cue-lines-example .line.horizontal {
+    width: 80%;
+    height: 2px;
+    top: 40%;
+    left: 10%;
+}
+.cue-lines-example .line.arm-path {
+    width: 2px;
+    height: 50%;
+    bottom: 10%;
+}
+.cue-lines-example .line.arm-path.left {
+    left: 20%;
+    transform: rotate(-30deg);
+    transform-origin: bottom center;
+}
+.cue-lines-example .line.arm-path.right {
+    right: 20%;
+    transform: rotate(30deg);
+    transform-origin: bottom center;
+}
+
+/* Responsividade específica para a área de camera se necessário */
+@media (orientation: landscape) and (max-height: 500px) {
+    .camera-area {
+        /* Em paisagem em telas pequenas, talvez você queira que a camera ocupe mais altura */
+        aspect-ratio: 16 / 9;
     }
+    .controls-feedback-area {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-around;
+        padding: 10px;
+        max-height: none; /* Libera a altura em paisagem */
+    }
+    .exercise-title { display: none; } /* Esconde título para economizar espaço */
 }

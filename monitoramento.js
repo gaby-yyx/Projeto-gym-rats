@@ -1,167 +1,204 @@
-// Elementos do DOM
-const cameraView = document.getElementById('cameraView');
-const overlay = document.getElementById('overlay');
-const iniciarCameraBtn = document.getElementById('iniciarCamera');
-const cameraSelect = document.getElementById('cameraSelect');
-const feedbackText = document.getElementById('feedbackText');
-const repetirInstrucaoBtn = document.getElementById('repetirInstrucao');
-const canvasContext = overlay.getContext('2d');
+document.addEventListener('DOMContentLoaded', () => {
+    const videoElement = document.getElementById('cameraFeed');
+    const overlayCanvas = document.getElementById('overlayCanvas');
+    const canvasCtx = overlayCanvas.getContext('2d');
+    const toggleCameraButton = document.getElementById('toggleCameraButton');
+    const startStopButton = document.getElementById('startStopButton');
+    const textFeedback = document.getElementById('textFeedback');
+    const loadingIndicator = document.getElementById('loadingIndicator');
 
-// Variáveis de estado
-let cameraStream = null;
-let exercicioIniciado = false;
-let repetiçõesCorretas = 0;
-const REPETICOES_PARA_AVALIAR = 5;
+    let currentStream;
+    let isMonitoring = false;
+    let useFrontCamera = true; // Preferência inicial
+    let animationFrameId;
 
-// Configurações do exercício (ângulos, etc.)
-const ANGULO_OMBRO_MAXIMO = 90; // Exemplo
-const ANGULO_TOLERANCIA = 15; // Exemplo
+    // Configurações para desenho e feedback (simulados)
+    const idealArmAngle = 90; // Graus para elevação lateral
+    const shoulderYPosition = 0.4; // % da altura do canvas (simulado)
+    const handRadius = 10; // Raio para desenhar as mãos (simulado)
 
-// Funções Auxiliares
-function desenharLinhasGuia() {
-    // **Lógica de desenho das linhas de guia na tela**
-    // Isso vai depender da biblioteca de visão computacional que você usar
-    // Exemplo simplificado (precisa de ajustes):
-    canvasContext.clearRect(0, 0, overlay.width, overlay.height);
-    canvasContext.strokeStyle = 'red';
-    canvasContext.lineWidth = 2;
+    // Inicializar a câmera ao carregar
+    setupCamera();
 
-    // Linha horizontal (ombro)
-    canvasContext.beginPath();
-    canvasContext.moveTo(0, overlay.height / 2);
-    canvasContext.lineTo(overlay.width, overlay.height / 2);
-    canvasContext.stroke();
+    async function setupCamera() {
+        loadingIndicator.style.display = 'flex';
+        if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
+        }
 
-    // ... Outras linhas para guiar o movimento
-}
-
-function analisarPosicao(pose) {
-    // **Lógica para analisar a posição do usuário (ângulos, etc.)**
-    // Isso vai depender da biblioteca de visão computacional
-    // Exemplo simplificado (PRECISA SER AJUSTADO):
-
-    // Supondo que 'pose' contenha informações sobre os pontos-chave do corpo
-    // (ombros, cotovelos, etc.)
-    const anguloOmbroDireito = calcularAngulo(pose.ombroDireito, pose.cotoveloDireito, pose.quadrilDireito);
-    const anguloOmbroEsquerdo = calcularAngulo(pose.ombroEsquerdo, pose.cotoveloEsquerdo, pose.quadrilEsquerdo);
-
-    let feedback = "";
-    if (anguloOmbroDireito > ANGULO_OMBRO_MAXIMO + ANGULO_TOLERANCIA ||
-        anguloOmbroEsquerdo > ANGULO_OMBRO_MAXIMO + ANGULO_TOLERANCIA) {
-        feedback = "Não eleve os braços acima da linha dos ombros.";
-    } else if (anguloOmbroDireito < ANGULO_OMBRO_MAXIMO - ANGULO_TOLERANCIA ||
-               anguloOmbroEsquerdo < ANGULO_OMBRO_MAXIMO - ANGULO_TOLERANCIA) {
-        feedback = "Eleve os braços até a linha dos ombros.";
-    } else {
-        feedback = "Movimento correto!";
-        repetiçõesCorretas++;
-    }
-
-    return feedback;
-}
-
-function calcularAngulo(ponto1, ponto2, ponto3) {
-    // **Função para calcular o ângulo entre três pontos**
-    // (Implementação matemática, pode usar bibliotecas)
-    // Exemplo simplificado (PRECISA SER IMPLEMENTADO):
-    return 0; // Substituir pela lógica correta
-}
-
-function falarFeedback(texto) {
-    // **Lógica para o feedback de áudio (Web Speech API)**
-    // Exemplo:
-    const utterance = new SpeechSynthesisUtterance(texto);
-    speechSynthesis.speak(utterance);
-}
-
-function atualizarFeedback(feedback) {
-    feedbackText.textContent = feedback;
-    falarFeedback(feedback);
-}
-
-function iniciarExercicio() {
-    exercicioIniciado = true;
-    repetiçõesCorretas = 0;
-    atualizarFeedback("Inicie a elevação lateral.");
-}
-
-function avaliarExercicio() {
-    if (repetiçõesCorretas >= REPETICOES_PARA_AVALIAR) {
-        atualizarFeedback("Ótimo! Continue assim.");
-    } else {
-        atualizarFeedback("Vamos tentar novamente. Concentre-se na postura.");
-        repetiçõesCorretas = 0; // Reiniciar contagem
-    }
-}
-
-// Event Listeners
-iniciarCameraBtn.addEventListener('click', async () => {
-    try {
-        cameraStream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: cameraSelect.value },
+        const constraints = {
+            video: {
+                facingMode: useFrontCamera ? 'user' : 'environment',
+                width: { ideal: 1280 }, // Solicita HD, mas o navegador pode ajustar
+                height: { ideal: 720 }
+            },
             audio: false
-        });
-        cameraView.srcObject = cameraStream;
-        cameraView.onloadedmetadata = () => {
-            overlay.width = cameraView.videoWidth;
-            overlay.height = cameraView.videoHeight;
         };
-        iniciarExercicio();
-    } catch (error) {
-        console.error("Erro ao acessar a câmera:", error);
-        atualizarFeedback("Erro ao acessar a câmera. Verifique as permissões.");
-    }
-});
 
-cameraSelect.addEventListener('change', () => {
-    if (cameraStream) {
-        cameraStream.getTracks().forEach(track => track.stop());
-    }
-    iniciarCameraBtn.click(); // Recarrega a câmera com a seleção
-});
-
-repetirInstrucaoBtn.addEventListener('click', () => {
-    atualizarFeedback("Posicione-se de frente para a câmera. Eleve os braços até a linha dos ombros.");
-});
-
-// **Loop Principal (Animação do Frame)**
-function mainLoop() {
-    if (cameraView.srcObject && exercicioIniciado) {
-        // **1. Obter a pose do usuário (Visão Computacional)**
-        // (Isso é o mais complexo e precisa de uma biblioteca)
-        // Exemplo simplificado:
-        const pose = obterPose(cameraView); // Função fictícia!
-
-        // 2. Analisar a posição e obter o feedback
-        const feedback = analisarPosicao(pose);
-        atualizarFeedback(feedback);
-
-        // 3. Desenhar as linhas de guia
-        desenharLinhasGuia();
-
-        // 4. Se necessário, avaliar o exercício (a cada 5 repetições)
-        if (repetiçõesCorretas % REPETICOES_PARA_AVALIAR === 0 && repetiçõesCorretas > 0) {
-            avaliarExercicio();
+        try {
+            currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+            videoElement.srcObject = currentStream;
+            videoElement.onloadedmetadata = () => {
+                // Ajusta o tamanho do canvas para o tamanho real do vídeo
+                // Isso é importante para o desenho ser preciso sobre o vídeo
+                overlayCanvas.width = videoElement.videoWidth;
+                overlayCanvas.height = videoElement.videoHeight;
+                loadingIndicator.style.display = 'none';
+                if (isMonitoring) { // Se estava monitorando, reinicia o loop de desenho
+                    startDrawingLoop();
+                }
+            };
+        } catch (error) {
+            console.error('Erro ao acessar a câmera:', error);
+            textFeedback.textContent = 'Erro ao acessar câmera. Verifique as permissões.';
+            loadingIndicator.style.display = 'none';
+            speakFeedback('Erro ao acessar a câmera. Verifique as permissões.');
         }
     }
-    requestAnimationFrame(mainLoop);
-}
 
-mainLoop();
+    toggleCameraButton.addEventListener('click', () => {
+        useFrontCamera = !useFrontCamera;
+        setupCamera();
+        textFeedback.textContent = `Câmera ${useFrontCamera ? 'frontal' : 'traseira'} ativada.`;
+    });
+
+    startStopButton.addEventListener('click', () => {
+        isMonitoring = !isMonitoring;
+        if (isMonitoring) {
+            startStopButton.innerHTML = '<i class="fas fa-stop"></i> Parar';
+            textFeedback.textContent = 'Monitoramento iniciado. Prepare-se!';
+            speakFeedback('Monitoramento iniciado. Prepare-se para a elevação lateral.');
+            startDrawingLoop();
+            // Aqui você iniciaria o modelo de IA (PoseNet, MoveNet, MediaPipe)
+        } else {
+            startStopButton.innerHTML = '<i class="fas fa-play"></i> Iniciar';
+            textFeedback.textContent = 'Monitoramento pausado.';
+            speakFeedback('Monitoramento pausado.');
+            cancelAnimationFrame(animationFrameId);
+            clearCanvas();
+            // Aqui você pararia o modelo de IA
+        }
+    });
+
+    function startDrawingLoop() {
+        if (!isMonitoring) return;
+
+        // Limpa o canvas antes de desenhar
+        clearCanvas();
+
+        // >>> INÍCIO DA SIMULAÇÃO DA IA E DESENHO <<<
+        // Em uma aplicação real, aqui você obteria os pontos da pose da IA
+        // e tomaria decisões baseadas neles.
+
+        // Exemplo: Desenhar linhas guias para elevação lateral
+        canvasCtx.strokeStyle = 'yellow';
+        canvasCtx.lineWidth = 4;
+        canvasCtx.fillStyle = 'yellow';
+        canvasCtx.font = '18px Arial';
+        canvasCtx.textAlign = 'center';
+
+        const canvasWidth = overlayCanvas.width;
+        const canvasHeight = overlayCanvas.height;
+
+        // Linha de referência horizontal (altura dos ombros - simulado)
+        const shoulderLineY = canvasHeight * shoulderYPosition;
+        canvasCtx.beginPath();
+        canvasCtx.moveTo(canvasWidth * 0.1, shoulderLineY);
+        canvasCtx.lineTo(canvasWidth * 0.9, shoulderLineY);
+        canvasCtx.stroke();
+        canvasCtx.fillText('Altura Ideal', canvasWidth / 2, shoulderLineY - 10);
+
+        // Posições simuladas das mãos (variaria com o movimento real)
+        // Esses valores seriam derivados da IA
+        const leftHandX = canvasWidth * 0.25; // Simulado
+        const rightHandX = canvasWidth * 0.75; // Simulado
+        let currentHandY = canvasHeight * 0.7; // Posição inicial simulada (braços para baixo)
+
+        // Simular movimento de subida e descida para demonstração
+        // Em um app real, isso viria da IA
+        const time = Date.now() / 1000; // Tempo para animar
+        const movementAmplitude = canvasHeight * 0.3;
+        currentHandY = shoulderLineY + movementAmplitude * Math.sin(time * 1.5); // Simula subida e descida
+
+        // Desenhar "mãos" simuladas
+        canvasCtx.beginPath();
+        canvasCtx.arc(leftHandX, currentHandY, handRadius, 0, Math.PI * 2);
+        canvasCtx.fill();
+        canvasCtx.beginPath();
+        canvasCtx.arc(rightHandX, currentHandY, handRadius, 0, Math.PI * 2);
+        canvasCtx.fill();
+
+        // Desenhar linhas dos ombros (simulados) até as mãos
+        const shoulderSimulatedXLeft = canvasWidth * 0.35;
+        const shoulderSimulatedXRight = canvasWidth * 0.65;
+        canvasCtx.beginPath();
+        canvasCtx.moveTo(shoulderSimulatedXLeft, shoulderLineY);
+        canvasCtx.lineTo(leftHandX, currentHandY);
+        canvasCtx.stroke();
+        canvasCtx.beginPath();
+        canvasCtx.moveTo(shoulderSimulatedXRight, shoulderLineY);
+        canvasCtx.lineTo(rightHandX, currentHandY);
+        canvasCtx.stroke();
 
 
-// **Funções Fictícias (Substituir pela Biblioteca de Visão Computacional)**
-function obterPose(videoElement) {
-    // **Função que deveria retornar a pose do usuário (pontos-chave do corpo)**
-    // Isso é onde a biblioteca de visão computacional entraria
-    // Exemplo: usar PoseNet (TensorFlow.js) ou MediaPipe
-    // (A implementação completa é MUITO complexa para este escopo)
-    return {
-        ombroDireito: { x: 0, y: 0 },
-        ombroEsquerdo: { x: 0, y: 0 },
-        cotoveloDireito: { x: 0, y: 0 },
-        cotoveloEsquerdo: { x: 0, y: 0 },
-        quadrilDireito: { x: 0, y: 0 },
-        quadrilEsquerdo: { x: 0, y: 0 }
-    };
-}
+        // Lógica de feedback simulada (baseada na posição simulada de currentHandY)
+        if (currentHandY < shoulderLineY - 20) { // Subiu demais (simulado)
+            textFeedback.textContent = 'Atenção: Não ultrapasse a altura dos ombros!';
+            speakFeedback('Muito alto!', true); // true para debouncing simples
+            canvasCtx.strokeStyle = 'red'; // Mudar cor das linhas para indicar erro
+        } else if (currentHandY > shoulderLineY + movementAmplitude * 0.8) { // Não subiu o suficiente (simulado)
+            textFeedback.textContent = 'Eleve mais os braços, até a linha.';
+            speakFeedback('Suba um pouco mais.', true);
+        } else {
+            textFeedback.textContent = 'Boa forma! Continue assim.';
+            // Não falar "Boa forma" continuamente, talvez a cada X repetições corretas
+        }
+        // >>> FIM DA SIMULAÇÃO DA IA E DESENHO <<<
+
+        animationFrameId = requestAnimationFrame(startDrawingLoop);
+    }
+
+    function clearCanvas() {
+        canvasCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+    }
+
+    let lastSpokenMessage = '';
+    let lastSpokenTime = 0;
+    const debounceSpeakTime = 3000; // Não repetir a mesma mensagem por 3s
+
+    function speakFeedback(message, debounce = false) {
+        if (debounce) {
+            const now = Date.now();
+            if (message === lastSpokenMessage && (now - lastSpokenTime) < debounceSpeakTime) {
+                return; // Evita spam da mesma mensagem
+            }
+            lastSpokenMessage = message;
+            lastSpokenTime = now;
+        }
+
+        try {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(message);
+                utterance.lang = 'pt-BR';
+                // Você pode configurar voz, tom, velocidade aqui se desejar
+                // const voices = window.speechSynthesis.getVoices();
+                // utterance.voice = voices.find(voice => voice.lang === 'pt-BR');
+                window.speechSynthesis.speak(utterance);
+            } else {
+                console.warn('API de Síntese de Voz não suportada.');
+            }
+        } catch (e) {
+            console.error("Erro na síntese de voz:", e);
+        }
+    }
+
+    // Ajustar o aspect-ratio da camera-area com base no vídeo real, se necessário
+    videoElement.addEventListener('loadedmetadata', () => {
+        const cameraArea = document.querySelector('.camera-area');
+        if (videoElement.videoWidth > 0 && videoElement.videoHeight > 0) {
+            const aspectRatio = videoElement.videoWidth / videoElement.videoHeight;
+            cameraArea.style.aspectRatio = `${aspectRatio}`;
+        }
+    });
+
+});

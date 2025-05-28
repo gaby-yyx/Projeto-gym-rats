@@ -1,64 +1,57 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gym Rats - Monitoramento de Elevação Lateral</title>
-    <link rel="stylesheet" href="monitoramento.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Roboto:wght@400;700&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Monitoramento: Elevação Lateral - Gym Rats</title>
+    <link rel="stylesheet" href="style.css"> <link rel="stylesheet" href="monitoramento.css"> <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
-
 <body>
-    <header class="monitoramento-header">
+    <header class="main-header">
         <div class="container header-content">
-            <a href="index.html" class="back-button">
-                <i class="fas fa-arrow-left"></i> Voltar
-            </a>
-            <h1>Monitoramento de Elevação Lateral</h1>
-        </div>
+            <a href="index.html" class="back-link"><i class="fas fa-arrow-left"></i></a>
+            <h1 class="logo-monitor">Gym Rats</h1>
+            <div class="placeholder-div"></div> </div>
     </header>
 
-    <main class="monitoramento-section">
-        <div class="container">
-            <section class="instrucoes">
-                <h2>Instruções</h2>
-                <p>Posicione-se de frente para a câmera. Certifique-se de que seu corpo esteja completamente visível.</p>
-                <p>O aplicativo irá guiá-lo na execução correta da elevação lateral com halteres.</p>
-                <button id="iniciarCamera">Iniciar Câmera</button>
-                <select id="cameraSelect">
-                    <option value="user">Câmera Frontal</option>
-                    <option value="environment">Câmera Traseira</option>
-                </select>
-            </section>
+    <main class="monitor-container">
+        <div class="camera-area">
+            <video id="cameraFeed" playsinline autoplay muted></video>
+            <canvas id="overlayCanvas"></canvas>
+            <div id="loadingIndicator" class="loading-indicator">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Carregando câmera...</p>
+            </div>
+        </div>
 
-            <section class="video-container">
-                <video id="cameraView" autoplay playsinline></video>
-                <canvas id="overlay"></canvas>
-            </section>
+        <div class="controls-feedback-area">
+            <div class="exercise-title">
+                <h2>Elevação Lateral</h2>
+            </div>
 
-            <section class="feedback">
-                <div class="feedback-text">
-                    <p id="feedbackText">Aguardando início...</p>
+            <div class="controls">
+                <button id="toggleCameraButton" aria-label="Trocar Câmera">
+                    <i class="fas fa-sync-alt"></i> Câmera
+                </button>
+                <button id="startStopButton" aria-label="Iniciar Monitoramento">
+                    <i class="fas fa-play"></i> Iniciar
+                </button>
+            </div>
+
+            <div id="feedbackArea" class="feedback-area">
+                <p id="textFeedback">Aguardando início...</p>
+                <div class="visual-cues">
+                    <p class="cue-description">Mantenha os braços próximos às linhas amarelas.</p>
+                    <div class="cue-lines-example">
+                        <div class="line horizontal"></div>
+                        <div class="line arm-path left"></div>
+                        <div class="line arm-path right"></div>
+                    </div>
                 </div>
-                <div class="feedback-audio">
-                    <button id="repetirInstrucao">Repetir Instrução</button>
-                </div>
-            </section>
+            </div>
         </div>
     </main>
 
-    <footer class="monitoramento-footer">
-        <div class="container">
-            <p>&copy; 2025 Projeto Gym Rats. Todos os direitos reservados.</p>
-        </div>
-    </footer>
-
     <script src="monitoramento.js"></script>
 </body>
-
 </html>
