@@ -18,8 +18,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let isAtBottom = false;
     let isAtTop = false;
     let exerciseStage = 'waiting'; // 'waiting', 'firstSet', 'corrections', 'secondSet', 'finished'
-    let firstSetData = []; // Array para armazenar dados da primeira série para análise
-    let corrections = []; // Array para armazenar as correções identificadas
+    let firstSetData = []; // Array para armazenar dados da primeira série para análise (simulado)
+    let corrections = []; // Array para armazenar as correções identificadas (simulado)
     let audioFeedback = null; // Objeto para controlar a síntese de fala
 
     // Elementos das linhas de correção (inicialmente escondidos)
@@ -43,11 +43,36 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const startWebcam = async (facingMode) => {
-        // ... (mesma implementação da função startWebcam) ...
+        console.log(`Tentando iniciar a webcam com facingMode: ${facingMode}`);
+        if (currentStream) {
+            console.log('Parando a stream anterior.');
+            currentStream.getTracks().forEach(track => track.stop());
+        }
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: facingMode }
+            });
+            console.log('Stream da webcam obtida com sucesso.');
+            webcamFeed.srcObject = stream;
+            currentStream = stream;
+            webcamFeed.onloadedmetadata = () => {
+                overlayCanvas.width = webcamFeed.videoWidth;
+                overlayCanvas.height = webcamFeed.videoHeight;
+                const aspectRatio = webcamFeed.videoHeight / webcamFeed.videoWidth;
+                webcamFeed.parentElement.style.paddingTop = `${aspectRatio * 100}%`;
+                showToast(`Câmera ${facingMode === 'user' ? 'frontal' : 'traseira'} ativada.`);
+            };
+        } catch (err) {
+            console.error("Erro ao acessar a webcam: ", err);
+            showToast("Não foi possível acessar a câmera. Verifique as permissões.", 5000);
+            feedbackMessage.textContent = "Erro: Câmera não acessível.";
+            feedbackMessage.className = "feedback-message feedback-error";
+        }
     };
 
     toggleCameraButton.addEventListener('click', () => {
-        // ... (mesma implementação do evento de alternar câmera) ...
+        cameraFacingMode = cameraFacingMode === 'user' ? 'environment' : 'user';
+        startWebcam(cameraFacingMode);
     });
 
     const speak = (text) => {
@@ -64,16 +89,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    const analyzeRepetition = (videoData) => {
-        // *** Lógica de ANÁLISE DE VÍDEO REAL AQUI ***
-        // Esta função receberia dados do vídeo (pontos chave do corpo, ângulos, etc.)
-        // e determinaria se uma repetição foi concluída e se houve erros na forma.
-
-        // *** SIMULAÇÃO BÁSICA PARA PROPÓSITO ILUSTRATIVO ***
-        const movementDetected = Math.random() > 0.5; // Simula detecção de movimento
+    const analyzeRepetition = (/* videoData */) => {
+        // *** SIMULAÇÃO DE ANÁLISE PARA PROPÓSITO ILUSTRATIVO ***
+        const movementDetected = Math.random() > 0.5;
         const reachedTop = Math.random() > 0.7 && movementDetected;
         const reachedBottom = Math.random() < 0.3 && movementDetected;
-        const formIssue = Math.random() < 0.2 ? 'elevação_excessiva' : null;
+        const formIssue = Math.random() < 0.3 ? (Math.random() < 0.5 ? 'elevação_excessiva' : 'cotovelos_flexionados') : null;
 
         return { reachedTop, reachedBottom, formIssue };
     };
@@ -81,15 +102,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const processFrame = () => {
         if (!isMonitoring || !webcamFeed.videoWidth) return;
 
-        // *** Obter dados do frame da webcam para análise (usando uma biblioteca de análise de vídeo) ***
-        // const videoData = captureVideoData(webcamFeed);
-
-        // *** SIMULAÇÃO DE ANÁLISE PARA PROPÓSITO ILUSTRATIVO ***
-        const analysisResult = analyzeRepetition(/* videoData */);
-
+        // *** SIMULAÇÃO DE ANÁLISE POR FRAME PARA A PRIMEIRA SÉRIE ***
         if (exerciseStage === 'firstSet') {
-            // Armazenar dados para análise posterior
-            // firstSetData.push(analysisResult);
+            const analysisResult = analyzeRepetition();
+            firstSetData.push(analysisResult); // Simula coleta de dados
 
             if (analysisResult.reachedTop && isAtBottom) {
                 reps++;
@@ -107,24 +123,45 @@ document.addEventListener('DOMContentLoaded', () => {
                 exerciseStage = 'corrections';
                 feedbackMessage.textContent = "Analisando suas repetições...";
                 setTimeout(() => {
-                    // *** Lógica para ANALISAR 'firstSetData' e gerar 'corrections' ***
-                    corrections = ['Não eleve os braços acima dos ombros.', 'Mantenha os cotovelos levemente flexionados.'];
+                    // *** SIMULAÇÃO DA ANÁLISE DA PRIMEIRA SÉRIE E GERAÇÃO DE CORREÇÕES ***
+                    let issues = {};
+                    firstSetData.forEach(data => {
+                        if (data.formIssue) {
+                            issues[data.formIssue] = (issues[data.formIssue] || 0) + 1;
+                        }
+                    });
+
+                    corrections = [];
+                    if (issues['elevação_excessiva'] > firstSetData.length / 2) {
+                        corrections.push('Não eleve os braços acima dos ombros.');
+                    }
+                    if (issues['cotovelos_flexionados'] > firstSetData.length / 2) {
+                        corrections.push('Mantenha os cotovelos levemente flexionados.');
+                    }
+
+                    let feedbackText = "Você completou a primeira série. ";
+                    if (corrections.length > 0) {
+                        feedbackText += "As correções são: " + corrections.join(', ') + ". ";
+                    } else {
+                        feedbackText += "Sua forma parece boa. ";
+                    }
+                    feedbackText += "Vamos para a próxima série com guias visuais.";
+
                     feedbackMessage.textContent = "Correções identificadas. Preparando feedback de áudio.";
-                    speak("Você completou a primeira série. As correções são: " + corrections.join(', ') + ". Vamos para a próxima série com guias visuais.");
+                    speak(feedbackText);
+
                     setTimeout(() => {
                         exerciseStage = 'secondSet';
                         reps = 0;
                         repCounter.textContent = `Repetições: ${reps}`;
                         feedbackMessage.textContent = "Iniciando a segunda série com guias visuais.";
                         startSecondSetGuidance();
-                    }, 5000); // Tempo para o feedback de áudio
-                }, 3000); // Tempo para análise
+                    }, 6000); // Tempo para o feedback de áudio
+                }, 3000); // Tempo para análise simulada
             }
         } else if (exerciseStage === 'secondSet') {
-            // *** Lógica de ANÁLISE DE VÍDEO REAL E APLICAÇÃO DAS CORREÇÕES VISUAIS AQUI ***
-            // Com base em 'corrections', você ajustaria a posição e visibilidade das 'correction-lines'.
+            const analysisResult = analyzeRepetition();
 
-            // *** SIMULAÇÃO BÁSICA PARA PROPÓSITO ILUSTRATIVO ***
             if (analysisResult.reachedTop && isAtBottom) {
                 reps++;
                 repCounter.textContent = `Repetições: ${reps}`;
@@ -135,18 +172,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 isAtTop = false;
             }
 
-            // Simulação de exibição das linhas de correção (baseado nas correções)
+            // Exibir as linhas de correção com base nas 'corrections'
+            lineShoulders.classList.remove('show');
+            lineElbows.classList.remove('show');
+
             if (corrections.includes('Não eleve os braços acima dos ombros.')) {
                 lineShoulders.classList.add('show');
                 lineShoulders.style.backgroundColor = 'red';
-            } else {
-                lineShoulders.classList.remove('show');
+                lineShoulders.style.top = '15%'; // Ajuste a posição conforme necessário
             }
             if (corrections.includes('Mantenha os cotovelos levemente flexionados.')) {
                 lineElbows.classList.add('show');
-                lineElbows.style.backgroundColor = 'yellow'; // Cor diferente para distinguir
-            } else {
-                lineElbows.classList.remove('show');
+                lineElbows.style.backgroundColor = 'yellow';
+                lineElbows.style.top = '55%'; // Ajuste a posição conforme necessário
             }
 
             if (reps >= 10) {
@@ -183,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
             isMonitoring = true;
             startMonitoringBtn.classList.add('hidden');
             stopMonitoringBtn.classList.remove('hidden');
-            monitoringInterval = setInterval(processFrame, 100); // Analisar frames frequentemente
+            monitoringInterval = setInterval(processFrame, 100); // Analisar frames frequentemente (simulado)
             firstSetData = []; // Limpar dados da série anterior
             corrections = []; // Limpar correções anteriores
             lineShoulders.classList.remove('show');
@@ -198,16 +236,7 @@ document.addEventListener('DOMContentLoaded', () => {
         feedbackMessage.textContent = "Iniciando a segunda série com guias visuais. Faça 10 repetições.";
         isMonitoring = true;
         monitoringInterval = setInterval(processFrame, 100);
-        // Exibir as linhas de correção com base nas 'corrections'
-        if (corrections.includes('Não eleve os braços acima dos ombros.')) {
-            lineShoulders.classList.add('show');
-            lineShoulders.style.backgroundColor = 'red';
-        }
-        if (corrections.includes('Mantenha os cotovelos levemente flexionados.')) {
-            lineElbows.classList.add('show');
-            lineElbows.style.backgroundColor = 'yellow';
-        }
-        // Adicione lógica para outras correções e linhas visuais conforme necessário
+        // As linhas de correção são controladas dentro da função processFrame na fase 'secondSet'
     };
 
     stopMonitoringBtn.addEventListener('click', () => {
