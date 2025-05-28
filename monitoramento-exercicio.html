@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gym Rats: Monitoramento de Elevação Lateral</title>
+    <link rel="stylesheet" href="style.css"> <link rel="stylesheet" href="monitoramento.css"> <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <header class="main-header">
+        <div class="container header-content">
+            <div class="logo-area">
+                <a href="treino-personalizado.html" class="back-home-btn" title="Voltar para Geração de Treino">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <h1 class="logo">Gym Rats</h1>
+            </div>
+        </div>
+    </header>
+
+    <main class="monitoring-section">
+        <div class="container">
+            <section class="exercise-display-section">
+                <h2>Elevação Lateral com Halteres</h2>
+                <div class="video-container">
+                    <video id="webcam-feed" autoplay playsinline></video>
+                    <canvas id="overlay-canvas"></canvas>
+                    <div class="correction-lines-overlay" id="correction-lines-overlay">
+                        </div>
+                </div>
+                <div class="camera-controls">
+                    <button id="toggle-camera-btn" class="btn btn-tertiary">
+                        <i class="fas fa-camera-rotate"></i> Alternar Câmera
+                    </button>
+                    <button id="start-monitoring-btn" class="btn btn-primary">
+                        <i class="fas fa-play-circle"></i> Iniciar Monitoramento
+                    </button>
+                    <button id="stop-monitoring-btn" class="btn btn-secondary hidden">
+                        <i class="fas fa-stop-circle"></i> Parar Monitoramento
+                    </button>
+                </div>
+                <div class="feedback-area">
+                    <h3>Feedback de Correção:</h3>
+                    <p id="feedback-message" class="feedback-initial">Aguardando início do exercício...</p>
+                    <div class="status-indicators">
+                        <span id="rep-counter">Repetições: 0</span>
+                        <span id="form-status" class="status-neutral">Forma: Neutra</span>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="main-footer">
+        <div class="container">
+            <p>&copy; 2025 Projeto Gym Rats. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+    <div id="notification-toast" class="notification-toast"></div>
+
+    <script src="monitoramento.js"></script>
+</body>
+</html>
