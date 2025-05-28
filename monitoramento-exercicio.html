@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Monitoramento: Elevação Lateral - Gym Rats</title>
-    <link rel="stylesheet" href="style.css"> <link rel="stylesheet" href="monitoramento.css"> <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="style.css"> <link rel="stylesheet" href="monitoramento.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
     <header class="main-header">
@@ -22,11 +23,16 @@
                 <i class="fas fa-spinner fa-spin"></i>
                 <p>Carregando câmera...</p>
             </div>
+            <div id="repCorrectIndicator" class="rep-correct-indicator">
+                <i class="fas fa-check-circle"></i>
+                <span>Ótimo!</span>
+            </div>
         </div>
 
         <div class="controls-feedback-area">
             <div class="exercise-title">
                 <h2>Elevação Lateral</h2>
+                <p id="repCounter" class="rep-counter">Repetições: 0</p>
             </div>
 
             <div class="controls">
@@ -40,14 +46,6 @@
 
             <div id="feedbackArea" class="feedback-area">
                 <p id="textFeedback">Aguardando início...</p>
-                <div class="visual-cues">
-                    <p class="cue-description">Mantenha os braços próximos às linhas amarelas.</p>
-                    <div class="cue-lines-example">
-                        <div class="line horizontal"></div>
-                        <div class="line arm-path left"></div>
-                        <div class="line arm-path right"></div>
-                    </div>
-                </div>
             </div>
         </div>
     </main>

@@ -7,6 +7,8 @@
     --color-dark-gray: #333333;
     --color-red-error: #E74C3C;
     --color-green-success: #2ECC71;
+    --color-green-correct: #2ECC71; /* Adicionado para consistência */
+    --color-orange-warning: #F39C12;
 }
 
 body {
@@ -16,6 +18,7 @@ body {
     flex-direction: column;
     height: 100vh; /* Full viewport height */
     margin: 0;
+    font-family: 'Roboto', sans-serif; /* Adicionando uma fonte base */
     overflow: hidden; /* Prevent scrollbars on the body itself */
 }
 
@@ -32,7 +35,7 @@ body {
     justify-content: space-between;
     align-items: center;
     width: 90%;
-    max-width: 1200px;
+    max-width: 1200px; /* Ajuste conforme seu container principal */
     margin: 0 auto;
 }
 
@@ -59,29 +62,37 @@ body {
     display: flex;
     flex-direction: column;
     width: 100%;
-    overflow: hidden; /* Prevent internal scrolling from affecting body */
+    overflow: hidden;
 }
 
 .camera-area {
     position: relative;
     width: 100%;
-    /* Ajuste a aspect-ratio conforme o comum em celulares ou deixe a JS ajustar */
-    aspect-ratio: 9 / 16; /* Proporção vertical comum */
+    aspect-ratio: 9 / 16; /* Proporção vertical comum, pode ser ajustado por JS */
     background-color: #1a1a1a;
     overflow: hidden;
 }
 
-#cameraFeed, #overlayCanvas {
+#cameraFeed {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    object-fit: cover; /* Garante que o vídeo cubra a área, pode cortar um pouco */
+    object-fit: cover;
+}
+
+#cameraFeed.mirrored {
+    transform: scaleX(-1);
 }
 
 #overlayCanvas {
-    z-index: 5; /* Para desenhar sobre o vídeo */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 5;
 }
 
 .loading-indicator {
@@ -100,15 +111,50 @@ body {
     margin-bottom: 10px;
 }
 
+.rep-correct-indicator {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.5);
+    background-color: rgba(46, 204, 113, 0.85);
+    color: var(--color-white);
+    padding: 20px 30px;
+    border-radius: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 7;
+    opacity: 0;
+    transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+    pointer-events: none;
+}
+
+.rep-correct-indicator.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.rep-correct-indicator i {
+    font-size: 3em;
+    margin-bottom: 8px;
+}
+
+.rep-correct-indicator span {
+    font-size: 1.2em;
+    font-weight: bold;
+}
 
 .controls-feedback-area {
     background-color: var(--color-dark-gray);
-    padding: 15px;
+    padding: 10px 15px;
     text-align: center;
-    flex-shrink: 0; /* Não encolhe */
+    flex-shrink: 0;
     border-top: 2px solid var(--color-yellow);
-    overflow-y: auto; /* Permite scroll se o conteúdo for muito */
-    max-height: calc(100vh - (9 / 16 * 100vw) - 60px); /* Altura restante aproximada */
+    overflow-y: auto;
+    /* Calcula uma altura máxima para não estourar a viewport */
+    /* A altura do header é aproximadamente 50-60px */
+    max-height: calc(100vh - (9 / 16 * 100vw) - 60px); /* 60px é uma estimativa do header */
 }
 
 .exercise-title h2 {
@@ -116,7 +162,13 @@ body {
     font-size: 1.4em;
     color: var(--color-yellow);
     margin-top: 0;
-    margin-bottom: 15px;
+    margin-bottom: 5px;
+}
+
+.rep-counter {
+    font-size: 0.9em;
+    color: var(--color-light-gray);
+    margin-bottom: 10px;
 }
 
 .controls {
@@ -130,7 +182,7 @@ body {
     background-color: var(--color-yellow);
     color: var(--color-black);
     border: none;
-    padding: 12px 18px;
+    padding: 10px 15px;
     border-radius: 8px;
     font-size: 1em;
     font-weight: 700;
@@ -158,71 +210,30 @@ body {
 }
 
 #textFeedback {
-    font-size: 1.1em;
+    font-size: 1em;
     color: var(--color-light-gray);
-    min-height: 2em; /* Para evitar saltos de layout */
+    min-height: 2.8em; /* Para 2 linhas de texto sem saltos */
+    line-height: 1.4;
     margin-bottom: 10px;
-}
-
-.feedback-area .visual-cues {
-    margin-top: 10px;
-    padding: 10px;
-    background-color: rgba(0,0,0,0.2);
-    border-radius: 5px;
-}
-.cue-description {
-    font-size: 0.9em;
-    color: var(--color-light-gray);
-    margin-bottom: 8px;
-}
-.cue-lines-example {
-    position: relative;
-    width: 100px; /* Tamanho de exemplo */
-    height: 80px; /* Tamanho de exemplo */
-    border: 1px dashed var(--color-dark-gray);
-    margin: 0 auto;
-    display: flex;
+    display: flex; /* Centralizar verticalmente se for menos de 2 linhas */
     align-items: center;
     justify-content: center;
 }
-.cue-lines-example .line {
-    position: absolute;
-    background-color: var(--color-yellow);
-}
-.cue-lines-example .line.horizontal {
-    width: 80%;
-    height: 2px;
-    top: 40%;
-    left: 10%;
-}
-.cue-lines-example .line.arm-path {
-    width: 2px;
-    height: 50%;
-    bottom: 10%;
-}
-.cue-lines-example .line.arm-path.left {
-    left: 20%;
-    transform: rotate(-30deg);
-    transform-origin: bottom center;
-}
-.cue-lines-example .line.arm-path.right {
-    right: 20%;
-    transform: rotate(30deg);
-    transform-origin: bottom center;
-}
 
-/* Responsividade específica para a área de camera se necessário */
+/* Ajustes para telas muito pequenas em paisagem */
 @media (orientation: landscape) and (max-height: 500px) {
     .camera-area {
-        /* Em paisagem em telas pequenas, talvez você queira que a camera ocupe mais altura */
-        aspect-ratio: 16 / 9;
+        aspect-ratio: 16 / 9; /* Tentar usar mais largura */
     }
     .controls-feedback-area {
         flex-direction: row;
         align-items: center;
         justify-content: space-around;
-        padding: 10px;
-        max-height: none; /* Libera a altura em paisagem */
+        padding: 5px 10px;
+        max-height: 80px; /* Limitar altura em paisagem */
+        overflow: visible; /* Pode precisar ajustar */
     }
-    .exercise-title { display: none; } /* Esconde título para economizar espaço */
+    .exercise-title { display: none; }
+    #textFeedback { font-size: 0.8em; min-height: 2em; }
+    .controls button { padding: 8px 10px; font-size: 0.9em; }
 }
