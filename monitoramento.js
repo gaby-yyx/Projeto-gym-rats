@@ -1,266 +1,167 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const webcamFeed = document.getElementById('webcam-feed');
-    const overlayCanvas = document.getElementById('overlay-canvas');
-    const correctionLinesOverlay = document.getElementById('correction-lines-overlay');
-    const toggleCameraButton = document.getElementById('toggle-camera-btn');
-    const startMonitoringBtn = document.getElementById('start-monitoring-btn');
-    const stopMonitoringBtn = document.getElementById('stop-monitoring-btn');
-    const feedbackMessage = document.getElementById('feedback-message');
-    const repCounter = document.getElementById('rep-counter');
-    const formStatus = document.getElementById('form-status');
-    const notificationToast = document.getElementById('notification-toast');
+// Elementos do DOM
+const cameraView = document.getElementById('cameraView');
+const overlay = document.getElementById('overlay');
+const iniciarCameraBtn = document.getElementById('iniciarCamera');
+const cameraSelect = document.getElementById('cameraSelect');
+const feedbackText = document.getElementById('feedbackText');
+const repetirInstrucaoBtn = document.getElementById('repetirInstrucao');
+const canvasContext = overlay.getContext('2d');
 
-    let currentStream = null;
-    let cameraFacingMode = 'user';
-    let monitoringInterval = null;
-    let reps = 0;
-    let isMonitoring = false;
-    let isAtBottom = false;
-    let isAtTop = false;
-    let exerciseStage = 'waiting'; // 'waiting', 'firstSet', 'corrections', 'secondSet', 'finished'
-    let firstSetData = []; // Array para armazenar dados da primeira série para análise (simulado)
-    let corrections = []; // Array para armazenar as correções identificadas (simulado)
-    let audioFeedback = null; // Objeto para controlar a síntese de fala
+// Variáveis de estado
+let cameraStream = null;
+let exercicioIniciado = false;
+let repetiçõesCorretas = 0;
+const REPETICOES_PARA_AVALIAR = 5;
 
-    // Elementos das linhas de correção (inicialmente escondidos)
-    const lineShoulders = document.createElement('div');
-    lineShoulders.classList.add('correction-line', 'line-shoulders');
-    const lineElbows = document.createElement('div');
-    lineElbows.classList.add('correction-line', 'line-elbows');
-    const lineWrists = document.createElement('div');
-    lineWrists.classList.add('correction-line', 'line-wrists');
+// Configurações do exercício (ângulos, etc.)
+const ANGULO_OMBRO_MAXIMO = 90; // Exemplo
+const ANGULO_TOLERANCIA = 15; // Exemplo
 
-    correctionLinesOverlay.appendChild(lineShoulders);
-    correctionLinesOverlay.appendChild(lineElbows);
-    correctionLinesOverlay.appendChild(lineWrists);
+// Funções Auxiliares
+function desenharLinhasGuia() {
+    // **Lógica de desenho das linhas de guia na tela**
+    // Isso vai depender da biblioteca de visão computacional que você usar
+    // Exemplo simplificado (precisa de ajustes):
+    canvasContext.clearRect(0, 0, overlay.width, overlay.height);
+    canvasContext.strokeStyle = 'red';
+    canvasContext.lineWidth = 2;
 
-    const showToast = (message, duration = 3000) => {
-        notificationToast.textContent = message;
-        notificationToast.classList.add('show');
-        setTimeout(() => {
-            notificationToast.classList.remove('show');
-        }, duration);
-    };
+    // Linha horizontal (ombro)
+    canvasContext.beginPath();
+    canvasContext.moveTo(0, overlay.height / 2);
+    canvasContext.lineTo(overlay.width, overlay.height / 2);
+    canvasContext.stroke();
 
-    const startWebcam = async (facingMode) => {
-        console.log(`Tentando iniciar a webcam com facingMode: ${facingMode}`);
-        if (currentStream) {
-            console.log('Parando a stream anterior.');
-            currentStream.getTracks().forEach(track => track.stop());
-        }
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: facingMode }
-            });
-            console.log('Stream da webcam obtida com sucesso.');
-            webcamFeed.srcObject = stream;
-            currentStream = stream;
-            webcamFeed.onloadedmetadata = () => {
-                overlayCanvas.width = webcamFeed.videoWidth;
-                overlayCanvas.height = webcamFeed.videoHeight;
-                const aspectRatio = webcamFeed.videoHeight / webcamFeed.videoWidth;
-                webcamFeed.parentElement.style.paddingTop = `${aspectRatio * 100}%`;
-                showToast(`Câmera ${facingMode === 'user' ? 'frontal' : 'traseira'} ativada.`);
-            };
-        } catch (err) {
-            console.error("Erro ao acessar a webcam: ", err);
-            showToast("Não foi possível acessar a câmera. Verifique as permissões.", 5000);
-            feedbackMessage.textContent = "Erro: Câmera não acessível.";
-            feedbackMessage.className = "feedback-message feedback-error";
-        }
-    };
+    // ... Outras linhas para guiar o movimento
+}
 
-    toggleCameraButton.addEventListener('click', () => {
-        cameraFacingMode = cameraFacingMode === 'user' ? 'environment' : 'user';
-        startWebcam(cameraFacingMode);
-    });
+function analisarPosicao(pose) {
+    // **Lógica para analisar a posição do usuário (ângulos, etc.)**
+    // Isso vai depender da biblioteca de visão computacional
+    // Exemplo simplificado (PRECISA SER AJUSTADO):
 
-    const speak = (text) => {
-        if ('speechSynthesis' in window) {
-            if (!audioFeedback) {
-                audioFeedback = new SpeechSynthesisUtterance();
-                audioFeedback.lang = 'pt-BR';
-            }
-            audioFeedback.text = text;
-            window.speechSynthesis.speak(audioFeedback);
-        } else {
-            console.log('A síntese de fala não é suportada neste navegador.');
-            showToast('Feedback de áudio não suportado.', 3000);
-        }
-    };
+    // Supondo que 'pose' contenha informações sobre os pontos-chave do corpo
+    // (ombros, cotovelos, etc.)
+    const anguloOmbroDireito = calcularAngulo(pose.ombroDireito, pose.cotoveloDireito, pose.quadrilDireito);
+    const anguloOmbroEsquerdo = calcularAngulo(pose.ombroEsquerdo, pose.cotoveloEsquerdo, pose.quadrilEsquerdo);
 
-    const analyzeRepetition = (/* videoData */) => {
-        // *** SIMULAÇÃO DE ANÁLISE PARA PROPÓSITO ILUSTRATIVO ***
-        const movementDetected = Math.random() > 0.5;
-        const reachedTop = Math.random() > 0.7 && movementDetected;
-        const reachedBottom = Math.random() < 0.3 && movementDetected;
-        const formIssue = Math.random() < 0.3 ? (Math.random() < 0.5 ? 'elevação_excessiva' : 'cotovelos_flexionados') : null;
+    let feedback = "";
+    if (anguloOmbroDireito > ANGULO_OMBRO_MAXIMO + ANGULO_TOLERANCIA ||
+        anguloOmbroEsquerdo > ANGULO_OMBRO_MAXIMO + ANGULO_TOLERANCIA) {
+        feedback = "Não eleve os braços acima da linha dos ombros.";
+    } else if (anguloOmbroDireito < ANGULO_OMBRO_MAXIMO - ANGULO_TOLERANCIA ||
+               anguloOmbroEsquerdo < ANGULO_OMBRO_MAXIMO - ANGULO_TOLERANCIA) {
+        feedback = "Eleve os braços até a linha dos ombros.";
+    } else {
+        feedback = "Movimento correto!";
+        repetiçõesCorretas++;
+    }
 
-        return { reachedTop, reachedBottom, formIssue };
-    };
+    return feedback;
+}
 
-    const processFrame = () => {
-        if (!isMonitoring || !webcamFeed.videoWidth) return;
+function calcularAngulo(ponto1, ponto2, ponto3) {
+    // **Função para calcular o ângulo entre três pontos**
+    // (Implementação matemática, pode usar bibliotecas)
+    // Exemplo simplificado (PRECISA SER IMPLEMENTADO):
+    return 0; // Substituir pela lógica correta
+}
 
-        // *** SIMULAÇÃO DE ANÁLISE POR FRAME PARA A PRIMEIRA SÉRIE ***
-        if (exerciseStage === 'firstSet') {
-            const analysisResult = analyzeRepetition();
-            firstSetData.push(analysisResult); // Simula coleta de dados
+function falarFeedback(texto) {
+    // **Lógica para o feedback de áudio (Web Speech API)**
+    // Exemplo:
+    const utterance = new SpeechSynthesisUtterance(texto);
+    speechSynthesis.speak(utterance);
+}
 
-            if (analysisResult.reachedTop && isAtBottom) {
-                reps++;
-                repCounter.textContent = `Repetições: ${reps}`;
-                isAtTop = true;
-                isAtBottom = false;
-            } else if (analysisResult.reachedBottom) {
-                isAtBottom = true;
-                isAtTop = false;
-            }
+function atualizarFeedback(feedback) {
+    feedbackText.textContent = feedback;
+    falarFeedback(feedback);
+}
 
-            if (reps >= 10) {
-                clearInterval(monitoringInterval);
-                isMonitoring = false;
-                exerciseStage = 'corrections';
-                feedbackMessage.textContent = "Analisando suas repetições...";
-                setTimeout(() => {
-                    // *** SIMULAÇÃO DA ANÁLISE DA PRIMEIRA SÉRIE E GERAÇÃO DE CORREÇÕES ***
-                    let issues = {};
-                    firstSetData.forEach(data => {
-                        if (data.formIssue) {
-                            issues[data.formIssue] = (issues[data.formIssue] || 0) + 1;
-                        }
-                    });
+function iniciarExercicio() {
+    exercicioIniciado = true;
+    repetiçõesCorretas = 0;
+    atualizarFeedback("Inicie a elevação lateral.");
+}
 
-                    corrections = [];
-                    if (issues['elevação_excessiva'] > firstSetData.length / 2) {
-                        corrections.push('Não eleve os braços acima dos ombros.');
-                    }
-                    if (issues['cotovelos_flexionados'] > firstSetData.length / 2) {
-                        corrections.push('Mantenha os cotovelos levemente flexionados.');
-                    }
+function avaliarExercicio() {
+    if (repetiçõesCorretas >= REPETICOES_PARA_AVALIAR) {
+        atualizarFeedback("Ótimo! Continue assim.");
+    } else {
+        atualizarFeedback("Vamos tentar novamente. Concentre-se na postura.");
+        repetiçõesCorretas = 0; // Reiniciar contagem
+    }
+}
 
-                    let feedbackText = "Você completou a primeira série. ";
-                    if (corrections.length > 0) {
-                        feedbackText += "As correções são: " + corrections.join(', ') + ". ";
-                    } else {
-                        feedbackText += "Sua forma parece boa. ";
-                    }
-                    feedbackText += "Vamos para a próxima série com guias visuais.";
-
-                    feedbackMessage.textContent = "Correções identificadas. Preparando feedback de áudio.";
-                    speak(feedbackText);
-
-                    setTimeout(() => {
-                        exerciseStage = 'secondSet';
-                        reps = 0;
-                        repCounter.textContent = `Repetições: ${reps}`;
-                        feedbackMessage.textContent = "Iniciando a segunda série com guias visuais.";
-                        startSecondSetGuidance();
-                    }, 6000); // Tempo para o feedback de áudio
-                }, 3000); // Tempo para análise simulada
-            }
-        } else if (exerciseStage === 'secondSet') {
-            const analysisResult = analyzeRepetition();
-
-            if (analysisResult.reachedTop && isAtBottom) {
-                reps++;
-                repCounter.textContent = `Repetições: ${reps}`;
-                isAtTop = true;
-                isAtBottom = false;
-            } else if (analysisResult.reachedBottom) {
-                isAtBottom = true;
-                isAtTop = false;
-            }
-
-            // Exibir as linhas de correção com base nas 'corrections'
-            lineShoulders.classList.remove('show');
-            lineElbows.classList.remove('show');
-
-            if (corrections.includes('Não eleve os braços acima dos ombros.')) {
-                lineShoulders.classList.add('show');
-                lineShoulders.style.backgroundColor = 'red';
-                lineShoulders.style.top = '15%'; // Ajuste a posição conforme necessário
-            }
-            if (corrections.includes('Mantenha os cotovelos levemente flexionados.')) {
-                lineElbows.classList.add('show');
-                lineElbows.style.backgroundColor = 'yellow';
-                lineElbows.style.top = '55%'; // Ajuste a posição conforme necessário
-            }
-
-            if (reps >= 10) {
-                clearInterval(monitoringInterval);
-                isMonitoring = false;
-                exerciseStage = 'finished';
-                feedbackMessage.textContent = "Você completou as 20 repetições!";
-                speak("Parabéns! Você completou o exercício.");
-                startMonitoringBtn.classList.remove('hidden');
-                stopMonitoringBtn.classList.add('hidden');
-                // Resetar o estado para um próximo uso
-                exerciseStage = 'waiting';
-                reps = 0;
-                repCounter.textContent = `Repetições: ${reps}`;
-                formStatus.textContent = "Forma: Neutra";
-                formStatus.className = "status-neutral";
-                lineShoulders.classList.remove('show');
-                lineElbows.classList.remove('show');
-                lineWrists.classList.remove('show');
-            }
-        }
-    };
-
-    const startFirstSet = () => {
-        if (!currentStream) {
-            showToast("Ative a câmera primeiro.", 3000);
-            return;
-        }
-        if (exerciseStage === 'waiting') {
-            exerciseStage = 'firstSet';
-            reps = 0;
-            repCounter.textContent = `Repetições: ${reps}`;
-            feedbackMessage.textContent = "Iniciando a primeira série. Faça 10 repetições.";
-            isMonitoring = true;
-            startMonitoringBtn.classList.add('hidden');
-            stopMonitoringBtn.classList.remove('hidden');
-            monitoringInterval = setInterval(processFrame, 100); // Analisar frames frequentemente (simulado)
-            firstSetData = []; // Limpar dados da série anterior
-            corrections = []; // Limpar correções anteriores
-            lineShoulders.classList.remove('show');
-            lineElbows.classList.remove('show');
-            lineWrists.classList.remove('show');
-        }
-    };
-
-    const startSecondSetGuidance = () => {
-        reps = 0;
-        repCounter.textContent = `Repetições: ${reps}`;
-        feedbackMessage.textContent = "Iniciando a segunda série com guias visuais. Faça 10 repetições.";
-        isMonitoring = true;
-        monitoringInterval = setInterval(processFrame, 100);
-        // As linhas de correção são controladas dentro da função processFrame na fase 'secondSet'
-    };
-
-    stopMonitoringBtn.addEventListener('click', () => {
-        if (isMonitoring) {
-            clearInterval(monitoringInterval);
-            isMonitoring = false;
-            startMonitoringBtn.classList.remove('hidden');
-            stopMonitoringBtn.classList.add('hidden');
-            feedbackMessage.textContent = "Monitoramento parado.";
-            exerciseStage = 'waiting'; // Resetar o estado
-            reps = 0;
-            repCounter.textContent = `Repetições: ${reps}`;
-            formStatus.textContent = "Forma: Neutra";
-            formStatus.className = "status-neutral";
-            lineShoulders.classList.remove('show');
-            lineElbows.classList.remove('show');
-            lineWrists.classList.remove('show');
-            if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
-                window.speechSynthesis.cancel();
-            }
-        }
-    });
-
-    startMonitoringBtn.addEventListener('click', startFirstSet);
-
-    startWebcam(cameraFacingMode);
+// Event Listeners
+iniciarCameraBtn.addEventListener('click', async () => {
+    try {
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: cameraSelect.value },
+            audio: false
+        });
+        cameraView.srcObject = cameraStream;
+        cameraView.onloadedmetadata = () => {
+            overlay.width = cameraView.videoWidth;
+            overlay.height = cameraView.videoHeight;
+        };
+        iniciarExercicio();
+    } catch (error) {
+        console.error("Erro ao acessar a câmera:", error);
+        atualizarFeedback("Erro ao acessar a câmera. Verifique as permissões.");
+    }
 });
+
+cameraSelect.addEventListener('change', () => {
+    if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+    }
+    iniciarCameraBtn.click(); // Recarrega a câmera com a seleção
+});
+
+repetirInstrucaoBtn.addEventListener('click', () => {
+    atualizarFeedback("Posicione-se de frente para a câmera. Eleve os braços até a linha dos ombros.");
+});
+
+// **Loop Principal (Animação do Frame)**
+function mainLoop() {
+    if (cameraView.srcObject && exercicioIniciado) {
+        // **1. Obter a pose do usuário (Visão Computacional)**
+        // (Isso é o mais complexo e precisa de uma biblioteca)
+        // Exemplo simplificado:
+        const pose = obterPose(cameraView); // Função fictícia!
+
+        // 2. Analisar a posição e obter o feedback
+        const feedback = analisarPosicao(pose);
+        atualizarFeedback(feedback);
+
+        // 3. Desenhar as linhas de guia
+        desenharLinhasGuia();
+
+        // 4. Se necessário, avaliar o exercício (a cada 5 repetições)
+        if (repetiçõesCorretas % REPETICOES_PARA_AVALIAR === 0 && repetiçõesCorretas > 0) {
+            avaliarExercicio();
+        }
+    }
+    requestAnimationFrame(mainLoop);
+}
+
+mainLoop();
+
+
+// **Funções Fictícias (Substituir pela Biblioteca de Visão Computacional)**
+function obterPose(videoElement) {
+    // **Função que deveria retornar a pose do usuário (pontos-chave do corpo)**
+    // Isso é onde a biblioteca de visão computacional entraria
+    // Exemplo: usar PoseNet (TensorFlow.js) ou MediaPipe
+    // (A implementação completa é MUITO complexa para este escopo)
+    return {
+        ombroDireito: { x: 0, y: 0 },
+        ombroEsquerdo: { x: 0, y: 0 },
+        cotoveloDireito: { x: 0, y: 0 },
+        cotoveloEsquerdo: { x: 0, y: 0 },
+        quadrilDireito: { x: 0, y: 0 },
+        quadrilEsquerdo: { x: 0, y: 0 }
+    };
+}
